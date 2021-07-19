@@ -148,7 +148,7 @@
 !*.vsdx
 !*.mpp
 
-# .dat数据格式
+# .dat锟斤拷锟捷革拷式
 !*.dat
 
 # SQLite Database Files
@@ -201,3 +201,5 @@ WindowsNoEditor/
 !*.xcuserstate
 !*.xcsettings
 !*.xcbkptlist
+
+*.vs
