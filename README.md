@@ -81,3 +81,6 @@ UnreanEngine Debugger Extension.
 | 控制台命令：“**UEDebugger.BreakpointType 1 0**”           |
 
 ### 演示视频
+![Video](README.md.res/01_Media/01_BreakpointType/001_BreakpointType_PrintString_Video.mp4)
+
+<video src="README.md.res/01_Media/01_BreakpointType/001_BreakpointType_PrintString_Video.mp4"></video>
