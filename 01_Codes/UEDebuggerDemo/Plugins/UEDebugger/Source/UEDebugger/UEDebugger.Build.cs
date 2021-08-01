@@ -10,8 +10,6 @@ public class UEDebugger : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
-				"UEDebugger/Public"
-				
 				// ... add public include paths required here ...
 			}
 			);
@@ -19,8 +17,6 @@ public class UEDebugger : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				"UEDebugger/Private",
-				
 				// ... add other private include paths required here ...
 			}
 			);
