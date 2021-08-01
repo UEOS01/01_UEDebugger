@@ -5,6 +5,7 @@
 #include "KismetCompilerModule.h"
 #include "Kismet2/KismetDebugUtilities.h"
 #include "UEDebuggerBPLibrary.h"
+#include "WatchPointViewer.h"
 
 #define LOCTEXT_NAMESPACE "FUEDebuggerEditorModule"
 
@@ -87,8 +88,10 @@ void FUEDebuggerEditorModule::OnScriptExceptionCustom(const UObject* ActiveObjec
 
 	if (GPreFrameCounter != GFrameCounter)
 	{
-		FString FrameCounterInfo = FString::Printf(TEXT("------FrameCounter: %d------"), GFrameCounter);
-		UUEDebuggerBPLibrary::CustomPrintString(ActiveObjectTemp, FrameCounterInfo, true, true, FLinearColor::Yellow, BreakpointScreenStringDuration);
+		FString FrameCounterInfoForLog = FString::Printf(TEXT("\n \n=================================================== FrameCounter: %d ==================================================="), GFrameCounter);
+		UUEDebuggerBPLibrary::CustomPrintString(ActiveObjectTemp, FrameCounterInfoForLog, false, true, FLinearColor::Yellow, BreakpointScreenStringDuration);
+		FString FrameCounterInfoForScreen = FString::Printf(TEXT("======== FrameCounter: %d ========"), GFrameCounter);
+		UUEDebuggerBPLibrary::CustomPrintString(ActiveObjectTemp, FrameCounterInfoForScreen, true, false, FLinearColor::Yellow, BreakpointScreenStringDuration);
 	}
 	GPreFrameCounter = GFrameCounter;
 	
@@ -129,9 +132,15 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 	FString NodeUniqueIDString;
 	FString NodeCustomFullNameString; // Use this for Print.
 
-	TArray<FString> InputParametersStrings;
+	TArray<FString> WatchedPinsStrings;
 
+	TArray<FString> InputParametersStrings;
 	TArray<FString> OutputParametersStrings;
+
+	FString OwnerNameString;
+	FString InstigatorNameString;
+	FString InstigatorControllerNameString;
+
 	//
 
 	// FKismetDebugUtilitiesData& Data = FKismetDebugUtilitiesData::Get();
@@ -169,6 +178,30 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 
 		NodeCustomFullNameString = NodeTitleString + TEXT("(") + NodeUniqueIDString + TEXT(")");
 
+		if(BlueprintObj)
+		{
+			// WatchViewer::UpdateInstancedWatchDisplay();
+
+			// We have a valid instance, iterate over all the watched pins and create rows for them
+			for (const FEdGraphPinReference& PinRef : BlueprintObj->WatchedPins)
+			{
+				UEdGraphPin* Pin = PinRef.Get();
+
+				// FText GraphName = FText::FromString(Pin->GetOwningNode()->GetGraph()->GetName());
+				// FText NodeName = Pin->GetOwningNode()->GetNodeTitle(ENodeTitleType::ListView);
+
+				FDebugInfo DebugInfo;
+				const FKismetDebugUtilities::EWatchTextResult WatchStatus = FKismetDebugUtilities::GetDebugInfo(DebugInfo, BlueprintObj, BlueprintInstance, Pin);
+
+				if (WatchStatus == FKismetDebugUtilities::EWTR_Valid)
+				{
+					// DebugInfo.Type
+					FString PinInfoString = TEXT("\"") + DebugInfo.DisplayName.ToString() + TEXT("\" = \"") + DebugInfo.Value.ToString() + TEXT("\"");
+					WatchedPinsStrings.Add(PinInfoString);
+				}
+			}
+		}
+
 		const TArray<UEdGraphPin*>& Pins = NodeStoppedAt->GetAllPins();
 
 		for (UEdGraphPin* Pin : Pins)
@@ -178,8 +211,8 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 				continue;
 			}
 
-			FText GraphName = FText::FromString(Pin->GetOwningNode()->GetGraph()->GetName());
-			FText NodeName = Pin->GetOwningNode()->GetNodeTitle(ENodeTitleType::ListView);
+			// FText GraphName = FText::FromString(Pin->GetOwningNode()->GetGraph()->GetName());
+			// FText NodeName = Pin->GetOwningNode()->GetNodeTitle(ENodeTitleType::ListView);
 
 			FDebugInfo DebugInfo;
 			const FKismetDebugUtilities::EWatchTextResult WatchStatus = FKismetDebugUtilities::GetDebugInfo(DebugInfo, BlueprintObj, BlueprintInstance, Pin);
@@ -187,7 +220,7 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 			if (WatchStatus == FKismetDebugUtilities::EWTR_Valid)
 			{
 				// DebugInfo.Type
-				FString PinInfoString = DebugInfo.DisplayName.ToString() + TEXT("=") + DebugInfo.Value.ToString();
+				FString PinInfoString = TEXT("\"") + DebugInfo.DisplayName.ToString() + TEXT("\" = \"") + DebugInfo.Value.ToString() + TEXT("\"");
 				if (Pin->Direction == EEdGraphPinDirection::EGPD_Input)
 				{
 					InputParametersStrings.Add(PinInfoString);
@@ -200,6 +233,25 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 		}
 	}
 	
+	{
+		const AActor* ActiveActor = Cast<AActor>(ActiveObject);
+		if (ActiveActor)
+		{
+			if (ActiveActor->GetOwner())
+			{
+				OwnerNameString = ActiveActor->GetOwner()->GetName();
+			}
+			if (ActiveActor->GetInstigator())
+			{
+				InstigatorNameString = ActiveActor->GetInstigator()->GetName();
+			}
+			if (ActiveActor->GetInstigatorController())
+			{
+				InstigatorControllerNameString = ActiveActor->GetInstigatorController()->GetName();
+			}
+		}
+	}
+
 	{
 		OutBlueprintExceptionDebugInfo.FrameCounter = FrameCounter;
 		OutBlueprintExceptionDebugInfo.FrameCounterString = FrameCounterString;
@@ -225,9 +277,15 @@ bool FUEDebuggerEditorModule::GetBlueprintExceptionDebugInfo(const UObject* Acti
 		OutBlueprintExceptionDebugInfo.NodeUniqueIDString = NodeUniqueIDString;
 		OutBlueprintExceptionDebugInfo.NodeCustomFullNameString = NodeCustomFullNameString;
 
+		OutBlueprintExceptionDebugInfo.WatchedPinsStrings = WatchedPinsStrings;
+
 		OutBlueprintExceptionDebugInfo.InputParametersStrings = InputParametersStrings;
 
 		OutBlueprintExceptionDebugInfo.OutputParametersStrings = OutputParametersStrings;
+
+		OutBlueprintExceptionDebugInfo.OwnerNameString = OwnerNameString;
+		OutBlueprintExceptionDebugInfo.InstigatorNameString = InstigatorNameString;
+		OutBlueprintExceptionDebugInfo.InstigatorControllerNameString = InstigatorControllerNameString;
 	}
 
 	return true;

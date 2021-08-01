@@ -30,6 +30,20 @@ static TAutoConsoleCommandGroup CCGStatFPSAndUNIT(
 
 FString FBlueprintExceptionDebugInfo::ToLogString()
 {
+	FString WatchedPinsString;
+	for (int32 IndexTemp = 0; IndexTemp < WatchedPinsStrings.Num(); IndexTemp++)
+	{
+		if (IndexTemp == 0)
+		{
+			WatchedPinsString += TEXT("WatchedPins: \n");
+		}
+		WatchedPinsString += WatchedPinsStrings[IndexTemp];
+		if (IndexTemp < WatchedPinsStrings.Num() - 1)
+		{
+			WatchedPinsString += TEXT("\n");
+		}
+	}
+
 	FString InputParametersString;
 	for (int32 IndexTemp = 0; IndexTemp < InputParametersStrings.Num(); IndexTemp++)
 	{
@@ -59,30 +73,68 @@ FString FBlueprintExceptionDebugInfo::ToLogString()
 	}
 
 	FString ParametersString;
+	if (!WatchedPinsString.IsEmpty())
+	{
+		ParametersString += TEXT("\n") + WatchedPinsString;
+	}
 	if (!InputParametersString.IsEmpty())
 	{
-		ParametersString = TEXT("\n") + InputParametersString;
+		ParametersString += TEXT("\n") + InputParametersString;
 	}
-
 	if (!OutputParametersString.IsEmpty())
 	{
 		ParametersString += TEXT("\n") + OutputParametersString;
 	}
 
-	FString ReturnValue = FString::Printf(TEXT("[%s(%s)] [%s.%s.\"%s\"] %s \nStackTrace:\n%s"),
+	FString OwnerAndInstigatorInfo;
+	if (!OwnerNameString.IsEmpty())
+	{
+		OwnerAndInstigatorInfo = TEXT("\nOwner = \"") + OwnerNameString + TEXT("\"");
+	}
+	if (!InstigatorNameString.IsEmpty())
+	{
+		OwnerAndInstigatorInfo += TEXT("\nInstigator = \"") + InstigatorNameString + TEXT("\"");
+	}
+	if (!InstigatorControllerNameString.IsEmpty())
+	{
+		OwnerAndInstigatorInfo += TEXT("\nInstigatorController = \"") + InstigatorControllerNameString + TEXT("\"");
+	}
+
+	FString ReturnValue = FString::Printf(TEXT("[%s(%s)] [%s.%s.\"%s\"] %s %s\n%s\nStack Trace:\n%s\n\n "),
 		*FrameCounterString,
 		*IndexString,
 		*PreFrameNameString,
 		*NodeGraphNameString,
 		*NodeCustomFullNameString,
 		*ParametersString,
+		*OwnerAndInstigatorInfo,
+		*StackTraceString,
 		*ScriptCallstackString
-		);
+	);
+
 	return ReturnValue;
 }
 
 FString FBlueprintExceptionDebugInfo::ToScreenString()
 {
+	FString WatchedPinsString;
+	for (int32 IndexTemp = 0; IndexTemp < WatchedPinsStrings.Num(); IndexTemp++)
+	{
+		if (IndexTemp == 0)
+		{
+			WatchedPinsString += TEXT("Watched:{ ");
+		}
+		WatchedPinsString += WatchedPinsStrings[IndexTemp];
+		if (IndexTemp < WatchedPinsStrings.Num() - 1)
+		{
+			WatchedPinsString += TEXT("; ");
+		}
+		else
+		{
+			WatchedPinsString += TEXT("}");
+		}
+	}
+
 	FString InputParametersString;
 	for (int32 IndexTemp = 0; IndexTemp < InputParametersStrings.Num(); IndexTemp++)
 	{
@@ -123,13 +175,14 @@ FString FBlueprintExceptionDebugInfo::ToScreenString()
 	FString PreFrameNameRightString;
 	PreFrameNameString.Split(TEXT("."), &PreFrameNameLeftString, &PreFrameNameRightString);
 
-	FString ReturnValue = FString::Printf(TEXT("[%s(%s)]> [%s.%s.%s.\"%s\"] %s %s"),
+	FString ReturnValue = FString::Printf(TEXT("[%s(%s)]> [%s.%s.%s.\"%s\"] %s %s %s"),
 		*FrameCounterString,
 		*IndexString,
 		*ActiveObjectNameString,
 		*PreFrameNameRightString,
 		*NodeGraphNameString,
 		*NodeCustomFullNameString,
+		*WatchedPinsString,
 		*InputParametersString,
 		*OutputParametersString
 	);

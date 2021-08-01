@@ -68,10 +68,20 @@ public:
 	FString NodeCustomFullNameString; // Use this for Print.
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<FString> WatchedPinsStrings;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<FString> InputParametersStrings;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TArray<FString> OutputParametersStrings;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FString OwnerNameString;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FString InstigatorNameString;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FString InstigatorControllerNameString;
 };
 
 /*
